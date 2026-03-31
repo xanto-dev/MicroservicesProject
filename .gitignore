@@ -1,0 +1,15 @@
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.cache
+*.log
+*.dll
+*.exe
+*.pdb
+*.db
+*.mdb
+*.opendb
+TestResults/
+.vscode/

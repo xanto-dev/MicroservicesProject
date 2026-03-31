@@ -1,0 +1,64 @@
+﻿{
+  "SwaggerEndPoints": [
+    {
+      "Key": "utilisateurs",
+      "Config": [
+        {
+          "Name": "Service Utilisateurs",
+          "Version": "1.0",
+          "Url": "http://localhost:5001/swagger/v1/swagger.json"
+        }
+      ]
+    },
+    {
+      "Key": "ressources",
+      "Config": [
+        {
+          "Name": "Service Ressources",
+          "Version": "1.0",
+          "Url": "http://localhost:5002/swagger/v1/swagger.json"
+        }
+      ]
+    },
+    {
+      "Key": "reservations",
+      "Config": [
+        {
+          "Name": "Service Réservations",
+          "Version": "1.0",
+          "Url": "http://localhost:5003/swagger/v1/swagger.json"
+        }
+      ]
+    },
+    {
+      "Key": "authentification",
+      "Config": [
+        {
+          "Name": "Service Authentification",
+          "Version": "1.0",
+          "Url": "http://localhost:5004/swagger/v1/swagger.json"
+        }
+      ]
+    },
+    {
+      "Key": "notifications",
+      "Config": [
+        {
+          "Name": "Service Notifications",
+          "Version": "1.0",
+          "Url": "http://localhost:5005/swagger/v1/swagger.json"
+        }
+      ]
+    },
+    {
+      "Key": "paiement",
+      "Config": [
+        {
+          "Name": "Service Paiement",
+          "Version": "1.0",
+          "Url": "http://localhost:5006/swagger/v1/swagger.json"
+        }
+      ]
+    }
+  ]
+}

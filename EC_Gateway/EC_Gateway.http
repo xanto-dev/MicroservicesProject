@@ -1,0 +1,6 @@
+@EC_Gateway_HostAddress = http://localhost:5012
+
+GET {{EC_Gateway_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
