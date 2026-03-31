@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Service_Paiement.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/paiement/[controller]")]
     public class WeatherForecastController : ControllerBase
     {
         private static readonly string[] Summaries = new[]
