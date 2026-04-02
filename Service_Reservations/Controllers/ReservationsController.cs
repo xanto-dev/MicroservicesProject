@@ -3,19 +3,23 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Service_Reservations.Data;
 using Service_Reservations.Models;
+using System.Net.Http.Headers;
 
 namespace Service_Reservations.Controllers
 {
-    [Authorize] // On verrouille tout avec le token
+    [Authorize]
     [Route("api/reservations")]
     [ApiController]
     public class ReservationsController : ControllerBase
     {
         private readonly ReservationDbContext _context;
+        private readonly IHttpClientFactory _httpClientFactory;
 
-        public ReservationsController(ReservationDbContext context)
+        // On injecte le HttpClientFactory dans le constructeur
+        public ReservationsController(ReservationDbContext context, IHttpClientFactory httpClientFactory)
         {
             _context = context;
+            _httpClientFactory = httpClientFactory;
         }
 
         [HttpGet]
@@ -40,42 +44,42 @@ namespace Service_Reservations.Controllers
         [HttpPost]
         public async Task<ActionResult<Reservation>> PostReservation(Reservation reservation)
         {
-            // On force la date de création à maintenant
-            reservation.DateCreation = DateTime.UtcNow;
+            // 1. Création du client HTTP
+            var client = _httpClientFactory.CreateClient();
 
+            // 2. Transfert du Token JWT (Super important !)
+            // On récupère le token que Swagger nous a envoyé et on le donne à notre client interne
+            var authHeader = Request.Headers["Authorization"].ToString();
+            if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer "))
+            {
+                var token = authHeader.Substring("Bearer ".Length).Trim();
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            }
+
+            // --- ⚠️ REMPLACEZ PAR VOS VRAIS PORTS LOCAUX ⚠️ ---
+            string urlUtilisateurs = $"http://localhost:5001/api/utilisateurs/{reservation.UtilisateurId}";
+            string urlRessources = $"http://localhost:5002/api/ressources/{reservation.RessourceId}";
+
+            // 3. Demander au Service Utilisateurs si le client existe
+            var reponseUtilisateur = await client.GetAsync(urlUtilisateurs);
+            if (!reponseUtilisateur.IsSuccessStatusCode)
+            {
+                return BadRequest($"Impossible de créer la réservation : L'utilisateur avec l'ID {reservation.UtilisateurId} n'existe pas.");
+            }
+
+            // 4. Demander au Service Ressources si la chambre/salle existe
+            var reponseRessource = await client.GetAsync(urlRessources);
+            if (!reponseRessource.IsSuccessStatusCode)
+            {
+                return BadRequest($"Impossible de créer la réservation : La ressource avec l'ID {reservation.RessourceId} n'existe pas.");
+            }
+
+            // 5. Tout est bon, on sauvegarde !
+            reservation.Statut = "En attente";
             _context.Reservations.Add(reservation);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetReservation), new { id = reservation.Id }, reservation);
-        }
-
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutReservation(int id, Reservation reservation)
-        {
-            if (id != reservation.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(reservation).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!ReservationExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
         }
 
         [HttpDelete("{id}")]
@@ -91,11 +95,6 @@ namespace Service_Reservations.Controllers
             await _context.SaveChangesAsync();
 
             return NoContent();
-        }
-
-        private bool ReservationExists(int id)
-        {
-            return _context.Reservations.Any(e => e.Id == id);
         }
     }
 }

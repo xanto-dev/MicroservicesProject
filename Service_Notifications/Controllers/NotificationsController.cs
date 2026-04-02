@@ -3,19 +3,23 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Service_Notifications.Data;
 using Service_Notifications.Models;
+using System.Net.Http.Headers;
 
 namespace Service_Notifications.Controllers
 {
-    [Authorize] // On sécurise l'accès
-    [Route("api/notifications")] // Correspond à Ocelot
+    [Authorize]
+    [Route("api/notifications")]
     [ApiController]
     public class NotificationsController : ControllerBase
     {
         private readonly NotificationDbContext _context;
+        private readonly IHttpClientFactory _httpClientFactory;
 
-        public NotificationsController(NotificationDbContext context)
+        // Injection du contexte de base de données ET du client HTTP
+        public NotificationsController(NotificationDbContext context, IHttpClientFactory httpClientFactory)
         {
             _context = context;
+            _httpClientFactory = httpClientFactory;
         }
 
         [HttpGet]
@@ -40,16 +44,37 @@ namespace Service_Notifications.Controllers
         [HttpPost]
         public async Task<ActionResult<Notification>> PostNotification(Notification notification)
         {
+            // 1. Préparation du client HTTP et transfert du JWT
+            var client = _httpClientFactory.CreateClient();
+            var authHeader = Request.Headers["Authorization"].ToString();
+            if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer "))
+            {
+                var token = authHeader.Substring("Bearer ".Length).Trim();
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            }
+
+            // --- ⚠️ REMPLACEZ PAR LE VRAI PORT DU SERVICE RÉSERVATIONS ---
+            string urlReservations = $"http://localhost:5003/api/reservations/{notification.ReservationId}";
+
+            // 2. LA VÉRIFICATION : Est-ce que cette réservation existe ?
+            var reponseReservation = await client.GetAsync(urlReservations);
+
+            if (!reponseReservation.IsSuccessStatusCode)
+            {
+                // Si la réservation n'existe pas, on bloque la notification
+                return BadRequest($"Impossible d'envoyer la notification : La réservation {notification.ReservationId} n'existe pas dans le système.");
+            }
+
+            // 3. Si on arrive ici, la réservation existe ! On procède à l'enregistrement.
             notification.DateEnvoi = DateTime.UtcNow;
 
-            // --- SIMULATION DE L'ENVOI ---
-            // Dans un vrai projet, on utiliserait SendGrid ou Twilio ici.
-            // Pour le TP, on affiche simplement un message dans la console du serveur.
-            Console.WriteLine("\n==================================================");
-            Console.WriteLine($"[ENVOI FICTIF] Type: {notification.Type}");
-            Console.WriteLine($"À: {notification.Destinataire}");
-            Console.WriteLine($"Message: {notification.Message}");
-            Console.WriteLine("==================================================\n");
+            // Simulation de l'envoi dans la console
+            Console.WriteLine("=============================================");
+            Console.WriteLine($"[SUCCÈS] Nouvelle Notification Validée !");
+            Console.WriteLine($"Réservation ID : {notification.ReservationId}");
+            Console.WriteLine($"Destinataire   : {notification.Destinataire}");
+            Console.WriteLine($"Message        : {notification.Message}");
+            Console.WriteLine("=============================================\n");
 
             _context.Notifications.Add(notification);
             await _context.SaveChangesAsync();
@@ -61,10 +86,7 @@ namespace Service_Notifications.Controllers
         public async Task<IActionResult> DeleteNotification(int id)
         {
             var notification = await _context.Notifications.FindAsync(id);
-            if (notification == null)
-            {
-                return NotFound();
-            }
+            if (notification == null) return NotFound();
 
             _context.Notifications.Remove(notification);
             await _context.SaveChangesAsync();
