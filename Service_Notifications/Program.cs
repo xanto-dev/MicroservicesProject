@@ -38,6 +38,8 @@ builder.Services.AddSwaggerGen(c =>
 
 builder.Services.AddControllers();
 builder.Services.AddHttpClient();
+// Juste en-dessous de builder.Services.AddHttpClient();
+builder.Services.AddScoped<Service_Notifications.Services.IEmailService, Service_Notifications.Services.EmailService>();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 // --- CONFIGURATION DE LA BASE DE DONNÉES ---

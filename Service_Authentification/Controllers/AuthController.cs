@@ -59,7 +59,7 @@ namespace Service_Authentification.Controllers
                 issuer: _configuration["Jwt:Issuer"],
                 audience: _configuration["Jwt:Audience"],
                 claims: claims,
-                expires: DateTime.Now.AddHours(2), // Le token expire dans 2 heures
+                expires: DateTime.UtcNow.AddHours(2), // Le token expire dans 2 heures
                 signingCredentials: credentials);
 
             return new JwtSecurityTokenHandler().WriteToken(token);

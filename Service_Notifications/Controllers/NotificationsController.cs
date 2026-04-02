@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Service_Notifications.Data;
 using Service_Notifications.Models;
+using Service_Notifications.Services;
 using System.Net.Http.Headers;
 
 namespace Service_Notifications.Controllers
@@ -14,12 +15,14 @@ namespace Service_Notifications.Controllers
     {
         private readonly NotificationDbContext _context;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IEmailService _emailService; // ---> A AJOUTER
 
         // Injection du contexte de base de données ET du client HTTP
-        public NotificationsController(NotificationDbContext context, IHttpClientFactory httpClientFactory)
+        public NotificationsController(NotificationDbContext context, IHttpClientFactory httpClientFactory, IEmailService emailService)
         {
             _context = context;
             _httpClientFactory = httpClientFactory;
+            _emailService = emailService; // ---> A AJOUTER
         }
 
         [HttpGet]
@@ -68,13 +71,23 @@ namespace Service_Notifications.Controllers
             // 3. Si on arrive ici, la réservation existe ! On procède à l'enregistrement.
             notification.DateEnvoi = DateTime.UtcNow;
 
-            // Simulation de l'envoi dans la console
-            Console.WriteLine("=============================================");
-            Console.WriteLine($"[SUCCÈS] Nouvelle Notification Validée !");
-            Console.WriteLine($"Réservation ID : {notification.ReservationId}");
-            Console.WriteLine($"Destinataire   : {notification.Destinataire}");
-            Console.WriteLine($"Message        : {notification.Message}");
-            Console.WriteLine("=============================================\n");
+            // ---> 2. Appeler le service pour envoyer le vrai email
+            try 
+            {
+                string sujet = $"Notification pour la réservation #{notification.ReservationId}";
+                string corpsHtml = $"<h3>Bonjour,</h3><p>{notification.Message}</p>";
+
+                // Notification.Destinataire doit contenir une vraie adresse email (ex: "client@domaine.com")
+                await _emailService.SendEmailAsync(notification.Destinataire, sujet, corpsHtml);
+                
+                Console.WriteLine($"[SUCCÈS] Email envoyé à {notification.Destinataire}");
+            }
+            catch (Exception ex)
+            {
+                // En microservices, on gère les erreurs en évitant d'exposer les secrets réseau.
+                // Vous pourriez décider de sauvegarder quand même la notification et la marquer comme "Échouée"
+                return StatusCode(500, $"Erreur lors de l'envoi de l'email : {ex.Message}");
+            }
 
             _context.Notifications.Add(notification);
             await _context.SaveChangesAsync();
