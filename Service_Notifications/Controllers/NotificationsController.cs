@@ -15,14 +15,14 @@ namespace Service_Notifications.Controllers
     {
         private readonly NotificationDbContext _context;
         private readonly IHttpClientFactory _httpClientFactory;
-        private readonly IEmailService _emailService; // ---> A AJOUTER
+        private readonly IEmailService _emailService;
 
         // Injection du contexte de base de données ET du client HTTP
         public NotificationsController(NotificationDbContext context, IHttpClientFactory httpClientFactory, IEmailService emailService)
         {
             _context = context;
             _httpClientFactory = httpClientFactory;
-            _emailService = emailService; // ---> A AJOUTER
+            _emailService = emailService;
         }
 
         [HttpGet]
@@ -47,7 +47,7 @@ namespace Service_Notifications.Controllers
         [HttpPost]
         public async Task<ActionResult<Notification>> PostNotification(Notification notification)
         {
-            // 1. Préparation du client HTTP et transfert du JWT
+            // Préparation du client HTTP et transfert du JWT
             var client = _httpClientFactory.CreateClient();
             var authHeader = Request.Headers["Authorization"].ToString();
             if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer "))
@@ -56,10 +56,10 @@ namespace Service_Notifications.Controllers
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             }
 
-            // --- ⚠️ REMPLACEZ PAR LE VRAI PORT DU SERVICE RÉSERVATIONS ---
+          
             string urlReservations = $"http://localhost:5003/api/reservations/{notification.ReservationId}";
 
-            // 2. LA VÉRIFICATION : Est-ce que cette réservation existe ?
+            
             var reponseReservation = await client.GetAsync(urlReservations);
 
             if (!reponseReservation.IsSuccessStatusCode)
@@ -68,24 +68,23 @@ namespace Service_Notifications.Controllers
                 return BadRequest($"Impossible d'envoyer la notification : La réservation {notification.ReservationId} n'existe pas dans le système.");
             }
 
-            // 3. Si on arrive ici, la réservation existe ! On procède à l'enregistrement.
+            // en cas de succès, on peut continuer à préparer la notification
             notification.DateEnvoi = DateTime.UtcNow;
 
-            // ---> 2. Appeler le service pour envoyer le vrai email
-            try 
+            // appel au service d'email pour envoyer la notification par email
+            try
             {
                 string sujet = $"Notification pour la réservation #{notification.ReservationId}";
                 string corpsHtml = $"<h3>Bonjour,</h3><p>{notification.Message}</p>";
 
-                // Notification.Destinataire doit contenir une vraie adresse email (ex: "client@domaine.com")
+                 
                 await _emailService.SendEmailAsync(notification.Destinataire, sujet, corpsHtml);
                 
                 Console.WriteLine($"[SUCCÈS] Email envoyé à {notification.Destinataire}");
             }
             catch (Exception ex)
             {
-                // En microservices, on gère les erreurs en évitant d'exposer les secrets réseau.
-                // Vous pourriez décider de sauvegarder quand même la notification et la marquer comme "Échouée"
+                
                 return StatusCode(500, $"Erreur lors de l'envoi de l'email : {ex.Message}");
             }
 

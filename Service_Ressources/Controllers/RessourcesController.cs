@@ -6,8 +6,8 @@ using Service_Ressources.Models;
 
 namespace Service_Ressources.Controllers
 {
-    [Authorize] // Exige un Token JWT pour toutes les méthodes de ce contrôleur
-    [Route("api/ressources")] // La route correspond à celle d'Ocelot
+    [Authorize]
+    [Route("api/ressources")]
     [ApiController]
     public class RessourcesController : ControllerBase
     {
@@ -18,14 +18,14 @@ namespace Service_Ressources.Controllers
             _context = context;
         }
 
-        // GET: api/ressources
+        // GET api/ressources (Récupérer toutes les ressources)
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Ressource>>> GetRessources()
         {
             return await _context.Ressources.ToListAsync();
         }
 
-        // GET: api/ressources/5
+        // GET api/ressources/5 (Récupérer une ressource par ID)
         [HttpGet("{id}")]
         public async Task<ActionResult<Ressource>> GetRessource(int id)
         {
@@ -39,7 +39,7 @@ namespace Service_Ressources.Controllers
             return ressource;
         }
 
-        // POST: api/ressources (Créer une ressource)
+        // POST api/ressources (Créer une nouvelle ressource)
         [HttpPost]
         public async Task<ActionResult<Ressource>> PostRessource(Ressource ressource)
         {
@@ -49,7 +49,7 @@ namespace Service_Ressources.Controllers
             return CreatedAtAction(nameof(GetRessource), new { id = ressource.Id }, ressource);
         }
 
-        // PUT: api/ressources/5 (Modifier une ressource)
+        // PUT api/ressources/5 (Mettre à jour une ressource existante)
         [HttpPut("{id}")]
         public async Task<IActionResult> PutRessource(int id, Ressource ressource)
         {
@@ -79,7 +79,7 @@ namespace Service_Ressources.Controllers
             return NoContent();
         }
 
-        // DELETE: api/ressources/5 (Supprimer une ressource)
+        // DELETE api/ressources/5 (Supprimer une ressource)
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteRessource(int id)
         {

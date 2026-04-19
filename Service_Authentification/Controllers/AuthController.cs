@@ -9,7 +9,7 @@ using System.Text;
 
 namespace Service_Authentification.Controllers
 {
-    // Route alignée avec Ocelot : /api/authentification
+    // route de base pour les endpoints d'authentification
     [Route("api/authentification")]
     [ApiController]
     public class AuthController : ControllerBase
@@ -26,16 +26,16 @@ namespace Service_Authentification.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginModel login)
         {
-            // 1. Chercher l'utilisateur par son email
+            // Chercher l'utilisateur par son email
             var user = await _context.Utilisateurs.FirstOrDefaultAsync(u => u.Email == login.Email);
 
-            // 2. Vérifier si l'utilisateur existe et si le mot de passe correspond au hash
+            // Vérifier si l'utilisateur existe et si le mot de passe correspond au hash
             if (user == null || !BCrypt.Net.BCrypt.Verify(login.MotDePasse, user.MotDePasseHash))
             {
                 return Unauthorized("Email ou mot de passe incorrect.");
             }
 
-            // 3. Générer le Token JWT
+            //Générer le Token JWT
             var token = GenerateJwtToken(user);
 
             return Ok(new { Token = token });
@@ -47,7 +47,7 @@ namespace Service_Authentification.Controllers
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
-            // Informations contenues dans le token (Claims)
+            // Informations contenues dans le token
             var claims = new[]
             {
                 new Claim(JwtRegisteredClaimNames.Sub, user.Email),

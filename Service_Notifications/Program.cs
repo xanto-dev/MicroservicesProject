@@ -7,14 +7,14 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Ajout des services au conteneur
 builder.Services.AddEndpointsApiExplorer();
-// --- CONFIGURATION SWAGGER ---
+//configuration de Swagger
 builder.Services.AddSwaggerGen(c =>
 {
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "Entrez le token JWT comme ceci : Bearer {votre_token}",
+        Description = "Entrez le token JWT:",
         Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.Http,
@@ -38,15 +38,15 @@ builder.Services.AddSwaggerGen(c =>
 
 builder.Services.AddControllers();
 builder.Services.AddHttpClient();
-// Juste en-dessous de builder.Services.AddHttpClient();
+
 builder.Services.AddScoped<Service_Notifications.Services.IEmailService, Service_Notifications.Services.EmailService>();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+
 builder.Services.AddOpenApi();
-// --- CONFIGURATION DE LA BASE DE DONNÉES ---
+// configuration de la base de donnée
 builder.Services.AddDbContext<NotificationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// --- CONFIGURATION DU JWT ---
+// configuration de l'authentification JWT
 var jwtKey = builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("Clé JWT manquante");
 var key = Encoding.UTF8.GetBytes(jwtKey);
 
@@ -67,7 +67,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// configuration du pipeline HTTP
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();

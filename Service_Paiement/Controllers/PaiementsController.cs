@@ -17,7 +17,7 @@ namespace Service_Paiement.Controllers
         private readonly PaiementDbContext _context;
         private readonly IHttpClientFactory _httpClientFactory;
 
-        // Injection de IHttpClientFactory
+        
         public PaiementsController(PaiementDbContext context, IHttpClientFactory httpClientFactory)
         {
             _context = context;
@@ -48,7 +48,7 @@ namespace Service_Paiement.Controllers
                 return BadRequest("Le montant doit être supérieur à zéro.");
             }
 
-            // 1. PRÉPARATION DU CLIENT HTTP ET DU TOKEN JWT
+            // preparation du client HTTP pour communiquer avec les autres microservices
             var client = _httpClientFactory.CreateClient();
             var authHeader = Request.Headers["Authorization"].ToString();
             if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer "))
@@ -57,24 +57,24 @@ namespace Service_Paiement.Controllers
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             }
 
-            // --- ⚠️ REMPLACEZ PAR VOS VRAIS PORTS LOCAUX ⚠️ ---
+            
             string urlReservations = $"http://localhost:5003/api/reservations/{paiement.ReservationId}";
             string urlNotifications = $"http://localhost:5005/api/notifications";
 
-            // 2. VÉRIFICATION DE LA RÉSERVATION
+            // verification de l'existence de la reservation avant de tenter le paiement
             var reponseReservation = await client.GetAsync(urlReservations);
             if (!reponseReservation.IsSuccessStatusCode)
             {
                 return BadRequest($"Le paiement est refusé : La réservation avec l'ID {paiement.ReservationId} n'existe pas.");
             }
 
-            // On lit les détails de la réservation pour pouvoir la modifier plus tard
+            
             var reservationJson = await reponseReservation.Content.ReadAsStringAsync();
             var reservationOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            // Note: On utilise dynamic ici pour simplifier, car on n'a pas la classe Reservation dans ce projet
+             
             var reservationData = JsonSerializer.Deserialize<JsonElement>(reservationJson, reservationOptions);
 
-            // 3. TRAITEMENT STRIPE
+            //traitement du paiement avec Stripe
             try
             {
                 var options = new Stripe.ChargeCreateOptions
@@ -92,7 +92,7 @@ namespace Service_Paiement.Controllers
                 {
                     paiement.Statut = "Complété";
 
-                    // 4. MISE À JOUR DE LA RÉSERVATION (Statut -> "Payé")
+                    //mise à jour du statut de la réservation à "Payé" dans le microservice de réservation
                     var reservationMiseAJour = new
                     {
                         id = reservationData.GetProperty("id").GetInt32(),
@@ -100,17 +100,17 @@ namespace Service_Paiement.Controllers
                         ressourceId = reservationData.GetProperty("ressourceId").GetInt32(),
                         dateDebut = reservationData.GetProperty("dateDebut").GetDateTime(),
                         dateFin = reservationData.GetProperty("dateFin").GetDateTime(),
-                        statut = "Payé" // Le nouveau statut !
+                        statut = "Payé" // Le nouveau statut
                     };
 
                     var contentPut = new StringContent(JsonSerializer.Serialize(reservationMiseAJour), Encoding.UTF8, "application/json");
                     await client.PutAsync(urlReservations, contentPut);
 
-                    // 5. ENVOI DE LA NOTIFICATION (Bonus 5%)
+                    //envoi d'une notification de confirmation de paiement au microservice de notification
                     var notification = new
                     {
                         reservationId = paiement.ReservationId,
-                        // On récupère le courriel de l'utilisateur connecté directement depuis son Token JWT !
+                        // recuperation du courriel de l'utilisateur connecté directement depuis son Token JWT
                         destinataire = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "client@uqar.ca",
                         type = "Email",
                         message = $"Votre paiement de {paiement.Montant}$ a été accepté. Votre réservation #{paiement.ReservationId} est confirmée !"
@@ -130,7 +130,7 @@ namespace Service_Paiement.Controllers
                 return BadRequest(new { Message = "Erreur de paiement avec Stripe.", Detail = ex.Message });
             }
 
-            // 6. SAUVEGARDE DU PAIEMENT
+            //sauvegarde du paiement dans la base de données
             _context.Paiements.Add(paiement);
             await _context.SaveChangesAsync();
 

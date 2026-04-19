@@ -7,9 +7,9 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// ajout des services au conteneur
 builder.Services.AddEndpointsApiExplorer();
-// --- CONFIGURATION SWAGGER ---
+// configuration de Swagger pour inclure la sécurité JWT
 builder.Services.AddSwaggerGen(c =>
 {
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -40,12 +40,12 @@ builder.Services.AddSwaggerGen(c =>
 
 builder.Services.AddControllers();
 builder.Services.AddHttpClient();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+
 builder.Services.AddOpenApi();
 builder.Services.AddDbContext<PaiementDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// --- CONFIGURATION JWT ---
+//configuration de l'authentification JWT
 var jwtKey = builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("Clé JWT manquante");
 var key = Encoding.UTF8.GetBytes(jwtKey);
 
@@ -64,11 +64,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// --- CONFIGURATION STRIPE ---
+// configuration de Stripe
 Stripe.StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+//configuration du pipeline de traitement des requêtes HTTP
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();

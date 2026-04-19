@@ -6,7 +6,7 @@ using Service_Utilisateurs.Models;
 namespace Service_Utilisateurs.Controllers
 {
     [ApiController]
-    [Route("api/utilisateurs")] // Correspond parfaitement à ta configuration Ocelot
+    [Route("api/utilisateurs")]
     public class UtilisateursController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -16,11 +16,11 @@ namespace Service_Utilisateurs.Controllers
             _context = context;
         }
 
-        // GET: api/utilisateurs
+        // GET api/utilisateurs
         [HttpGet]
         public async Task<ActionResult<IEnumerable<object>>> GetUtilisateurs()
         {
-            // On retourne les utilisateurs sans exposer le mot de passe haché
+            // retourne une liste d'utilisateurs sans le mot de passe pour des raisons de sécurité
             var utilisateurs = await _context.Utilisateurs
                 .Select(u => new
                 {
@@ -35,7 +35,7 @@ namespace Service_Utilisateurs.Controllers
             return Ok(utilisateurs);
         }
 
-        // GET: api/utilisateurs/5
+        // GET api/utilisateurs/5 (Récupérer un utilisateur par ID)
         [HttpGet("{id}")]
         public async Task<ActionResult<object>> GetUtilisateur(int id)
         {
@@ -56,11 +56,11 @@ namespace Service_Utilisateurs.Controllers
             });
         }
 
-        // POST: api/utilisateurs
+        // POST api/utilisateurs (Créer un nouvel utilisateur)
         [HttpPost]
         public async Task<ActionResult<Utilisateur>> PostUtilisateur(Utilisateur utilisateur)
         {
-            // Vérification basique si l'email existe déjà
+            // Vérification si l'email existe déjà
             var emailExiste = await _context.Utilisateurs.AnyAsync(u => u.Email == utilisateur.Email);
             if (emailExiste)
             {
@@ -68,20 +68,20 @@ namespace Service_Utilisateurs.Controllers
             }
 
             // Hachage du mot de passe avec BCrypt avant la sauvegarde
-            // Nécessite le package NuGet : BCrypt.Net-Next
+       
             utilisateur.MotDePasseHash = BCrypt.Net.BCrypt.HashPassword(utilisateur.MotDePasseHash);
             utilisateur.DateCreation = DateTime.UtcNow;
 
             _context.Utilisateurs.Add(utilisateur);
             await _context.SaveChangesAsync();
 
-            // On ne renvoie pas le hash dans la réponse de création
+            
             utilisateur.MotDePasseHash = string.Empty;
 
             return CreatedAtAction(nameof(GetUtilisateur), new { id = utilisateur.Id }, utilisateur);
         }
 
-        // PUT: api/utilisateurs/5
+        // PUT api/utilisateurs/5 (Mettre à jour un utilisateur existant)
         [HttpPut("{id}")]
         public async Task<IActionResult> PutUtilisateur(int id, Utilisateur utilisateur)
         {
@@ -92,9 +92,7 @@ namespace Service_Utilisateurs.Controllers
 
             _context.Entry(utilisateur).State = EntityState.Modified;
 
-            // Si le mot de passe a été modifié, il faudrait le re-hacher ici.
-            // Pour simplifier ce code, on suppose qu'il n'est pas modifié dans cette requête basique.
-
+            // Si le mot de passe est modifié, hacher le nouveau mot de passe
             try
             {
                 await _context.SaveChangesAsync();

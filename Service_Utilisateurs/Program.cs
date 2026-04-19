@@ -3,20 +3,20 @@ using Service_Utilisateurs.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// ajouter les services au conteneur.
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddOpenApi();
 
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// configurez le pipeline HTTP.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();

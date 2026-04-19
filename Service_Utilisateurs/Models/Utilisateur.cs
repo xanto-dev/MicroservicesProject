@@ -7,7 +7,7 @@
         public string Prenom { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
 
-        // Pour la sécurité, on ne stockera que le hash du mot de passe
+        // on stocke le mot de passe haché
         public string MotDePasseHash { get; set; } = string.Empty;
 
         public DateTime DateCreation { get; set; } = DateTime.UtcNow;
